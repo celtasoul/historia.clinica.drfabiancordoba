@@ -184,8 +184,6 @@
     display:block;
     touch-action:none;
     cursor:crosshair;
-    background:#fff;
-    border-radius:4px;
   }
   .sig-tools{
     display:flex;
@@ -375,12 +373,11 @@
   <div class="field">
     <label class="field-label">¿Presenta alergia a algún medicamento?</label>
     <div class="radio-list">
-      <label><input type="radio" name="alergia" id="alergiaSi" value="Sí" onchange="toggleConditional('alergiaBox', true)"> Sí</label>
-      <label><input type="radio" name="alergia" id="alergiaNo" value="No" onchange="toggleConditional('alergiaBox', false)"> No</label>
+      <label><input type="checkbox" id="alergiaSi" onclick="toggleConditional('alergiaBox', this.checked)"> Sí</label>
     </div>
     <div class="conditional" id="alergiaBox">
       <label class="field-label" style="margin-top:12px;">Medicamentos con los que presenta alergia</label>
-      <textarea id="medAlergia" placeholder="Indique el nombre del medicamento"></textarea>
+      <textarea id="medAlergia"></textarea>
     </div>
   </div>
 
@@ -394,12 +391,11 @@
   <div class="field">
     <label class="field-label">¿Está tomando algún medicamento?</label>
     <div class="radio-list">
-      <label><input type="radio" name="medicamento" id="medicamentoSi" value="Sí" onchange="toggleConditional('medicamentoBox', true)"> Sí</label>
-      <label><input type="radio" name="medicamento" id="medicamentoNo" value="No" onchange="toggleConditional('medicamentoBox', false)"> No</label>
+      <label><input type="checkbox" id="medicamentoSi" onclick="toggleConditional('medicamentoBox', this.checked)"> Sí</label>
     </div>
     <div class="conditional" id="medicamentoBox">
       <label class="field-label" style="margin-top:12px;">Medicamentos que está tomando</label>
-      <textarea id="medActual" placeholder="Indique los medicamentos que está tomando"></textarea>
+      <textarea id="medActual"></textarea>
     </div>
   </div>
 
@@ -424,10 +420,9 @@
     <label class="field-label">Foto (documento / paciente)</label>
     <div class="photo-box">
       <div class="photo-actions">
-        <label for="photoCamera" class="btn btn-primary">📷 Sacar foto</label>
-        <button type="button" class="btn btn-secondary" onclick="borrarFoto()">🗑️ Borrar foto</button>
-        <label for="photoFile" class="btn btn-secondary">🖼️ Subir desde galería</label>
-      </div>
+        <label for="photoCamera" class="btn btn-primary">Sacar foto</label>
+        <button type="button" class="btn btn-secondary" onclick="borrarFoto()">Borrar foto</button>
+        </div>
       <input type="file" id="photoCamera" accept="image/*" capture="environment" onchange="handlePhoto(event)">
       <input type="file" id="photoFile" accept="image/*" onchange="handlePhoto(event)">
       <img id="photoPreview" class="photo-preview">
@@ -435,12 +430,11 @@
   </div>
 
   <div class="submit-bar">
-    <button type="button" class="btn btn-primary" onclick="enviarWhatsApp()">📤 Enviar a WhatsApp</button>
-    <button type="button" class="btn btn-secondary" onclick="descargarPDF()">💾 Descargar aquí</button>
+    <button type="button" class="btn btn-primary" onclick="descargarPDF()">Descargar aquí</button>
     <div class="status-msg" id="statusMsg"></div>
   </div>
 
-  <div class="footer-note">Formulario digital · Historia Clínica</div>
+  <div class="footer-note">Formulario digital · Historia Clínica · Copyright © 2026 CeltaSoul</div>
 
   </div>
 </div>
@@ -448,112 +442,69 @@
 <script>
 function toggleConditional(id, show){
   const el = document.getElementById(id);
-  if(!el) return;
-  if(show){
-    el.classList.add('visible');
-  } else {
-    el.classList.remove('visible');
-    const textarea = el.querySelector('textarea');
-    if(textarea) textarea.value = '';
-  }
+  if(show){ el.classList.add('visible'); } else { el.classList.remove('visible'); }
 }
-
-// Al cargar la página, las respuestas dependientes empiezan cerradas.
-document.addEventListener('DOMContentLoaded', () => {
-  toggleConditional('alergiaBox', false);
-  toggleConditional('medicamentoBox', false);
-});
 
 /* ---------- FIRMA ---------- */
 const canvas = document.getElementById('sigCanvas');
 const ctx = canvas.getContext('2d');
 let drawing = false;
 let hasSignature = false;
-let lastX = 0;
-let lastY = 0;
 
-function configurarCanvas(){
-  const ratio = Math.max(window.devicePixelRatio || 1, 1);
+function resizeCanvas(){
+  const ratio = window.devicePixelRatio || 1;
   const rect = canvas.getBoundingClientRect();
-  const cssWidth = Math.max(1, rect.width);
-  const cssHeight = Math.max(1, rect.height);
-
-  canvas.width = Math.round(cssWidth * ratio);
-  canvas.height = Math.round(cssHeight * ratio);
-
-  // Importante: usar setTransform evita que la escala se acumule
-  // cada vez que cambia el tamaño de la pantalla.
-  ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+  canvas.width = rect.width * ratio;
+  canvas.height = rect.height * ratio;
+  ctx.scale(ratio, ratio);
   ctx.strokeStyle = '#1f2740';
   ctx.lineWidth = 2.2;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 }
-
-function guardarFirmaComoImagen(){
-  return hasSignature ? canvas.toDataURL('image/png') : null;
-}
-
-function restaurarFirma(data){
-  if(!data) return;
-  const img = new Image();
-  img.onload = function(){
-    const rect = canvas.getBoundingClientRect();
-    ctx.drawImage(img, 0, 0, rect.width, rect.height);
-  };
-  img.src = data;
-}
-
-function resizeCanvas(){
-  const data = guardarFirmaComoImagen();
-  configurarCanvas();
-  if(data) restaurarFirma(data);
-}
-
-window.addEventListener('resize', resizeCanvas);
-configurarCanvas();
+window.addEventListener('resize', () => {
+  const data = hasSignature ? canvas.toDataURL() : null;
+  resizeCanvas();
+  if(data){
+    const img = new Image();
+    img.onload = () => ctx.drawImage(img, 0, 0, canvas.width / (window.devicePixelRatio||1), canvas.height / (window.devicePixelRatio||1));
+    img.src = data;
+  }
+});
+resizeCanvas();
 
 function getPos(e){
   const rect = canvas.getBoundingClientRect();
-  return {
-    x: e.clientX - rect.left,
-    y: e.clientY - rect.top
-  };
+  if(e.touches && e.touches.length > 0){
+    return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
+  }
+  return { x: e.clientX - rect.left, y: e.clientY - rect.top };
 }
-
 function startDraw(e){
   e.preventDefault();
   drawing = true;
   hasSignature = true;
-  canvas.setPointerCapture?.(e.pointerId);
   const p = getPos(e);
-  lastX = p.x;
-  lastY = p.y;
+  ctx.beginPath();
+  ctx.moveTo(p.x, p.y);
 }
-
 function moveDraw(e){
   if(!drawing) return;
   e.preventDefault();
   const p = getPos(e);
-  ctx.beginPath();
-  ctx.moveTo(lastX, lastY);
   ctx.lineTo(p.x, p.y);
   ctx.stroke();
-  lastX = p.x;
-  lastY = p.y;
 }
-
 function endDraw(e){
-  if(!drawing) return;
   drawing = false;
-  try { canvas.releasePointerCapture?.(e.pointerId); } catch (_) {}
 }
-
-canvas.addEventListener('pointerdown', startDraw);
-canvas.addEventListener('pointermove', moveDraw);
-canvas.addEventListener('pointerup', endDraw);
-canvas.addEventListener('pointercancel', endDraw);
-canvas.addEventListener('pointerleave', endDraw);
+canvas.addEventListener('mousedown', startDraw);
+canvas.addEventListener('mousemove', moveDraw);
+canvas.addEventListener('mouseup', endDraw);
+canvas.addEventListener('mouseleave', endDraw);
+canvas.addEventListener('touchstart', startDraw, {passive:false});
+canvas.addEventListener('touchmove', moveDraw, {passive:false});
+canvas.addEventListener('touchend', endDraw);
 
 function clearSignature(){
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -617,19 +568,6 @@ function validar(){
   if(!hasSignature){
     return 'Falta la firma.';
   }
-
-  if(document.getElementById('alergiaSi').checked &&
-     !obtenerValor('medAlergia')){
-    document.getElementById('medAlergia').focus();
-    return 'Indique a qué medicamento presenta alergia.';
-  }
-
-  if(document.getElementById('medicamentoSi').checked &&
-     !obtenerValor('medActual')){
-    document.getElementById('medActual').focus();
-    return 'Indique qué medicamento está tomando.';
-  }
-
   return null;
 }
 
@@ -861,8 +799,7 @@ async function generarYDescargarPDF(){
     }
   }
 
-  // ---- 4) Dibujar de verdad con la escala final ----
-  layout(scale, true);
+layout(scale, true);
 
   const nombreArchivo = nombreCampo.replace(/\s+/g,'_') || 'paciente';
   pdf.save(`Historia_Clinica_${nombreArchivo}.pdf`);
@@ -888,36 +825,8 @@ async function descargarPDF(){
   statusMsg.textContent = 'PDF descargado correctamente.';
 }
 
-async function enviarWhatsApp(){
-  const error = validar();
-  const statusMsg = document.getElementById('statusMsg');
-  if(error){
-    statusMsg.style.display = 'block';
-    statusMsg.style.color = '#c0392b';
-    statusMsg.textContent = error;
-    return;
-  }
-  statusMsg.style.display = 'block';
-  statusMsg.style.color = '#2c3652';
-  statusMsg.textContent = 'Generando PDF, por favor espere...';
-
-  const nombreCampo = await generarYDescargarPDF();
-
-  // WhatsApp no permite adjuntar archivos automáticamente por razones de seguridad del navegador.
-  // Abrimos el chat con el número de la clínica y un mensaje listo; el usuario solo debe
-  // adjuntar el PDF que se acaba de descargar.
-  statusMsg.textContent = 'PDF descargado. Abriendo WhatsApp para enviarlo...';
-
-  const numero = '5491135787806';
-  const mensaje = `Hola, adjunto la Historia Clínica completada por ${nombreCampo || 'el paciente'}. (Por favor adjunte el PDF que se descargó recién)`;
-  const url = `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
-
-  setTimeout(() => {
-    window.open(url, '_blank');
-    statusMsg.textContent = 'Se abrió WhatsApp. Adjunte el PDF descargado (revise su carpeta de Descargas) y envíelo.';
-  }, 800);
+ 
 }
 </script>
-
 </body>
 </html>
