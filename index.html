@@ -799,7 +799,8 @@ async function generarYDescargarPDF(){
     }
   }
 
-layout(scale, true);
+  // ---- 4) Dibujar de verdad con la escala final ----
+  layout(scale, true);
 
   const nombreArchivo = nombreCampo.replace(/\s+/g,'_') || 'paciente';
   pdf.save(`Historia_Clinica_${nombreArchivo}.pdf`);
@@ -825,8 +826,7 @@ async function descargarPDF(){
   statusMsg.textContent = 'PDF descargado correctamente.';
 }
 
- 
-}
 </script>
 </body>
 </html>
+
